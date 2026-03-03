@@ -2,6 +2,8 @@
 
 A lightweight markdown reader and annotator PWA built with React, TypeScript, and Tailwind CSS.
 
+See the deployed site at [mdnotes.co](https://mdnotes.co).
+
 ## Features
 
 - **Markdown rendering** with syntax highlighting via `react-markdown` and `remark-gfm`

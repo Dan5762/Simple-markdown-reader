@@ -15,14 +15,16 @@ export function buildFileTree(files: StoredFile[], emptyFolders?: Set<string>): 
     const parts = folderPath.split('/');
     let current = root;
     for (let i = 0; i < parts.length; i++) {
-      const name = parts[i];
+      const name = parts[i]!;
       const path = parts.slice(0, i + 1).join('/');
-      let existing = current.find((n) => n.name === name && n.type === 'folder');
-      if (!existing) {
-        existing = { name, path, type: 'folder', children: [] };
-        current.push(existing);
+      const found = current.find((n) => n.name === name && n.type === 'folder');
+      if (found) {
+        current = found.children!;
+      } else {
+        const node: TreeNode = { name, path, type: 'folder', children: [] };
+        current.push(node);
+        current = node.children!;
       }
-      current = existing.children!;
     }
   };
 
@@ -38,23 +40,24 @@ export function buildFileTree(files: StoredFile[], emptyFolders?: Set<string>): 
     let current = root;
 
     for (let i = 0; i < parts.length; i++) {
-      const name = parts[i];
+      const name = parts[i]!;
       const path = parts.slice(0, i + 1).join('/');
       const isFile = i === parts.length - 1;
 
-      let existing = current.find((n) => n.name === name && n.type === (isFile ? 'file' : 'folder'));
+      const found = current.find((n) => n.name === name && n.type === (isFile ? 'file' : 'folder'));
 
-      if (!existing) {
-        if (isFile) {
-          existing = { name, path, type: 'file', file };
-        } else {
-          existing = { name, path, type: 'folder', children: [] };
+      if (found) {
+        if (!isFile) {
+          current = found.children!;
         }
-        current.push(existing);
-      }
-
-      if (!isFile) {
-        current = existing.children!;
+      } else {
+        const node: TreeNode = isFile
+          ? { name, path, type: 'file', file }
+          : { name, path, type: 'folder', children: [] };
+        current.push(node);
+        if (!isFile) {
+          current = node.children!;
+        }
       }
     }
   }
