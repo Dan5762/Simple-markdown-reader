@@ -1,0 +1,71 @@
+@import 'highlight.js/styles/github-dark.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Annotation highlight colors — muted for dark backgrounds */
+mark[data-color='yellow'] {
+  background-color: rgba(250, 204, 21, 0.25);
+  color: inherit;
+  cursor: pointer;
+}
+mark[data-color='green'] {
+  background-color: rgba(74, 222, 128, 0.25);
+  color: inherit;
+  cursor: pointer;
+}
+mark[data-color='blue'] {
+  background-color: rgba(96, 165, 250, 0.25);
+  color: inherit;
+  cursor: pointer;
+}
+mark[data-color='pink'] {
+  background-color: rgba(244, 114, 182, 0.25);
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Highlight pulse animation */
+@keyframes highlight-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+mark.pulse {
+  animation: highlight-pulse 0.6s ease-in-out 2;
+}
+
+/* CodeMirror container sizing */
+.cm-editor {
+  height: 100%;
+}
+.cm-scroller {
+  overflow: auto;
+}
+
+/* Dark prose overrides for Tailwind Typography */
+.prose-dark {
+  --tw-prose-body: #d4d4d8;
+  --tw-prose-headings: #f4f4f5;
+  --tw-prose-lead: #a1a1aa;
+  --tw-prose-links: #e4e4e7;
+  --tw-prose-bold: #f4f4f5;
+  --tw-prose-counters: #a1a1aa;
+  --tw-prose-bullets: #71717a;
+  --tw-prose-hr: #3f3f46;
+  --tw-prose-quotes: #e4e4e7;
+  --tw-prose-quote-borders: #52525b;
+  --tw-prose-captions: #a1a1aa;
+  --tw-prose-kbd: #f4f4f5;
+  --tw-prose-kbd-shadows: 244 244 245;
+  --tw-prose-code: #e4e4e7;
+  --tw-prose-pre-code: #e4e4e7;
+  --tw-prose-pre-bg: #27272a;
+  --tw-prose-th-borders: #52525b;
+  --tw-prose-td-borders: #3f3f46;
+}
