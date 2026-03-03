@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
-  base: '/Simple-markdown-reader/',
+  base: '/',
   plugins: [
     react(),
     VitePWA({
