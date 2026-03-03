@@ -5,9 +5,10 @@ import { buildFileTree, getBasename, type TreeNode } from '@/lib/fileTree';
 export default function Sidebar({ open, onClose, onToggle }: { open: boolean; onClose: () => void; onToggle: () => void }) {
   const {
     files, folders, activeFilePath, selectFile, deleteFile, renameFile,
-    createFile, createFolder, deleteFolder, renameFolder, importFiles,
+    createFile, createFolder, deleteFolder, renameFolder, importFiles, moveFile,
   } = useFileContext();
   const [dragOver, setDragOver] = useState(false);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [showNewInput, setShowNewInput] = useState<{ type: 'file' | 'folder'; parent: string } | null>(null);
   const [newName, setNewName] = useState('');
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
@@ -26,9 +27,19 @@ export default function Sidebar({ open, onClose, onToggle }: { open: boolean; on
     });
   }, []);
 
+  const DRAG_MIME = 'application/x-file-path';
+
   const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     setDragOver(false);
+    setDragOverFolder(null);
+    // Internal file move — drop on root area moves to root
+    const filePath = e.dataTransfer.getData(DRAG_MIME);
+    if (filePath) {
+      moveFile(filePath, '');
+      return;
+    }
+    // Filesystem import
     if (e.dataTransfer.files.length > 0) {
       importFiles(e.dataTransfer.files);
     }
@@ -36,7 +47,25 @@ export default function Sidebar({ open, onClose, onToggle }: { open: boolean; on
 
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
-    setDragOver(true);
+    if (!e.dataTransfer.types.includes(DRAG_MIME)) {
+      setDragOver(true);
+    }
+  };
+
+  const handleFolderDrop = (e: DragEvent, folderPath: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverFolder(null);
+    const filePath = e.dataTransfer.getData(DRAG_MIME);
+    if (filePath) {
+      moveFile(filePath, folderPath);
+    }
+  };
+
+  const handleFolderDragOver = (e: DragEvent, folderPath: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverFolder(folderPath);
   };
 
   const handleCreate = () => {
@@ -102,10 +131,14 @@ export default function Sidebar({ open, onClose, onToggle }: { open: boolean; on
       const isExpanded = expandedFolders.has(node.path);
       const isRenaming = renamingPath === `folder:${node.path}`;
 
+      const isDragTarget = dragOverFolder === node.path;
+
       return (
         <li key={`folder:${node.path}`}>
           <div
-            className="group flex cursor-pointer items-center gap-1 px-2 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+            className={`group flex cursor-pointer items-center gap-1 px-2 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 ${
+              isDragTarget ? 'bg-zinc-700/50 ring-1 ring-inset ring-zinc-500' : ''
+            }`}
             style={{ paddingLeft: 8 + indent }}
             onClick={() => toggleFolder(node.path)}
             onDoubleClick={(e) => {
@@ -113,6 +146,9 @@ export default function Sidebar({ open, onClose, onToggle }: { open: boolean; on
               setRenamingPath(`folder:${node.path}`);
               setRenameValue(node.name);
             }}
+            onDrop={(e) => handleFolderDrop(e, node.path)}
+            onDragOver={(e) => handleFolderDragOver(e, node.path)}
+            onDragLeave={() => setDragOverFolder(null)}
           >
             {/* Chevron */}
             <svg className={`h-3 w-3 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,6 +228,11 @@ export default function Sidebar({ open, onClose, onToggle }: { open: boolean; on
     return (
       <li
         key={node.path}
+        draggable={!isRenaming}
+        onDragStart={(e) => {
+          e.dataTransfer.setData(DRAG_MIME, node.path);
+          e.dataTransfer.effectAllowed = 'move';
+        }}
         className={`group flex cursor-pointer items-center gap-2 px-2 py-1.5 text-sm ${
           isActive
             ? 'bg-zinc-800 text-white'
@@ -240,13 +281,35 @@ export default function Sidebar({ open, onClose, onToggle }: { open: boolean; on
         <button
           onClick={(e) => {
             e.stopPropagation();
+            if (!node.file) return;
+            const blob = new Blob([node.file.content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = basename;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="shrink-0 rounded p-1 text-zinc-500 opacity-0 hover:bg-zinc-700 hover:text-zinc-300 group-hover:opacity-100"
+          title="Download file"
+        >
+          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+          </svg>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
             if (confirm(`Delete "${basename}"?`)) {
               deleteFile(node.path);
             }
           }}
-          className="shrink-0 rounded px-1 text-xs text-zinc-500 opacity-0 hover:bg-red-500/20 hover:text-red-400 group-hover:opacity-100"
+          className="shrink-0 rounded p-1 text-zinc-500 opacity-0 hover:bg-red-500/20 hover:text-red-400 group-hover:opacity-100"
+          title="Delete file"
         >
-          ✕
+          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </li>
     );
@@ -314,7 +377,26 @@ export default function Sidebar({ open, onClose, onToggle }: { open: boolean; on
                   Drop .md files here or click Import
                 </div>
               ) : (
-                <ul className="py-1">
+                <ul
+                  className={`py-1 min-h-[2rem] ${dragOverFolder === '' ? 'bg-zinc-800/30' : ''}`}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverFolder(null);
+                    const filePath = e.dataTransfer.getData(DRAG_MIME);
+                    if (filePath) {
+                      moveFile(filePath, '');
+                    } else if (e.dataTransfer.files.length > 0) {
+                      importFiles(e.dataTransfer.files);
+                    }
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.types.includes(DRAG_MIME)) {
+                      setDragOverFolder('');
+                    }
+                  }}
+                  onDragLeave={() => setDragOverFolder(null)}
+                >
                   {renderNewInput('')}
                   {tree.map((node) => renderNode(node, 0))}
                 </ul>
