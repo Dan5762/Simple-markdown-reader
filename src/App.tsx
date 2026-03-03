@@ -5,12 +5,17 @@ import Sidebar from '@/components/Sidebar';
 import RenderedView from '@/components/RenderedView';
 import Editor from '@/components/Editor';
 import AnnotationPanel from '@/components/AnnotationPanel';
+import SyncButton from '@/components/SyncButton';
+import DeviceFlowModal from '@/components/DeviceFlowModal';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { useAuth } from '@/hooks/useAuth';
 
 type ViewMode = 'rendered' | 'editor';
 
 function AppContent() {
-  const { activeFile, activeFilePath, updateFileContent } = useFileContext();
+  const { files, activeFile, activeFilePath, updateFileContent } = useFileContext();
+  const { auth, isAuthenticated, isLoggingIn, verification, login, logout, cancelLogin } = useAuth();
+  const hasUnsyncedChanges = files.some((f) => f.locallyModified);
   const [viewMode, setViewMode] = useState<ViewMode>('rendered');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [annotationPanelOpen, setAnnotationPanelOpen] = useState(true);
@@ -66,9 +71,9 @@ function AppContent() {
         <div className="relative flex flex-1 flex-col overflow-hidden">
           {/* Content */}
           <div className="flex flex-1 overflow-hidden md:flex-row flex-col">
-            {/* Floating view toggle */}
+            {/* Floating top bar */}
             {activeFile && (
-              <div className="pointer-events-none absolute left-1/2 top-3 z-40 -translate-x-1/2">
+              <div className="pointer-events-none absolute inset-x-0 top-3 z-40 flex items-start justify-center px-4">
                 <div className="pointer-events-auto flex rounded-md bg-zinc-800/90 p-0.5 shadow-lg shadow-black/20 backdrop-blur-sm">
                   <button
                     onClick={() => setViewMode('rendered')}
@@ -92,6 +97,25 @@ function AppContent() {
                   </button>
                 </div>
               </div>
+            )}
+            {/* Sync button — top right */}
+            {(hasUnsyncedChanges || isAuthenticated) && (
+              <div className="pointer-events-none absolute right-4 top-3 z-40">
+                <div className="pointer-events-auto">
+                  <SyncButton
+                    hasUnsyncedChanges={hasUnsyncedChanges}
+                    isAuthenticated={isAuthenticated}
+                    username={auth?.username ?? null}
+                    isLoggingIn={isLoggingIn}
+                    onSync={login}
+                    onLogout={logout}
+                  />
+                </div>
+              </div>
+            )}
+            {/* Device Flow modal */}
+            {verification && (
+              <DeviceFlowModal verification={verification} onCancel={cancelLogin} />
             )}
             {activeFile ? (
               <>

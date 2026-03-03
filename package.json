@@ -13,6 +13,7 @@
     "@codemirror/language-data": "^6.5.1",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.36.5",
+    "@octokit/auth-oauth-device": "^8.0.3",
     "codemirror": "^6.0.1",
     "highlight.js": "^11.11.1",
     "idb": "^8.0.2",
