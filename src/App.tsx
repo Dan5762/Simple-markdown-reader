@@ -32,7 +32,7 @@ function AppContent() {
   const hasUnsyncedChanges = files.some((f) => f.locallyModified);
   const [viewMode, setViewMode] = useState<ViewMode>('rendered');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [annotationPanelOpen, setAnnotationPanelOpen] = useState(true);
+  const [annotationPanelOpen, setAnnotationPanelOpen] = useState(false);
   const [editableContent, setEditableContent] = useState('');
   const [focusedAnnotationId, setFocusedAnnotationId] = useState<string | null>(null);
 
