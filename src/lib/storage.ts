@@ -49,6 +49,11 @@ export async function deleteFileFromDb(path: string): Promise<void> {
 
 // --- Annotation operations ---
 
+export async function getAllAnnotations(): Promise<StoredAnnotations[]> {
+  const db = await getDb();
+  return db.getAll('annotations');
+}
+
 export async function getAnnotations(
   path: string,
 ): Promise<StoredAnnotations | undefined> {

@@ -7,14 +7,28 @@ import Editor from '@/components/Editor';
 import AnnotationPanel from '@/components/AnnotationPanel';
 import SyncButton from '@/components/SyncButton';
 import DeviceFlowModal from '@/components/DeviceFlowModal';
+import RepoSelector from '@/components/RepoSelector';
+import ConflictDialog from '@/components/ConflictDialog';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useAuth } from '@/hooks/useAuth';
+import { useSync } from '@/hooks/useSync';
 
 type ViewMode = 'rendered' | 'editor';
 
 function AppContent() {
-  const { files, activeFile, activeFilePath, updateFileContent } = useFileContext();
+  const { files, activeFile, activeFilePath, updateFileContent, refreshFiles } = useFileContext();
   const { auth, isAuthenticated, isLoggingIn, verification, login, logout, cancelLogin } = useAuth();
+  const {
+    status: syncStatus,
+    selectedRepo,
+    syncPlan,
+    progress: syncProgress,
+    sync,
+    selectRepoAndSync,
+    disconnectRepo,
+    resolveConflictsAndSync,
+    cancelSync,
+  } = useSync(auth, refreshFiles);
   const hasUnsyncedChanges = files.some((f) => f.locallyModified);
   const [viewMode, setViewMode] = useState<ViewMode>('rendered');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -107,8 +121,13 @@ function AppContent() {
                     isAuthenticated={isAuthenticated}
                     username={auth?.username ?? null}
                     isLoggingIn={isLoggingIn}
-                    onSync={login}
+                    syncStatus={syncStatus}
+                    repoName={selectedRepo?.name ?? null}
+                    syncProgress={syncProgress}
+                    onSync={sync}
+                    onLogin={login}
                     onLogout={logout}
+                    onDisconnectRepo={disconnectRepo}
                   />
                 </div>
               </div>
@@ -116,6 +135,22 @@ function AppContent() {
             {/* Device Flow modal */}
             {verification && (
               <DeviceFlowModal verification={verification} onCancel={cancelLogin} />
+            )}
+            {/* Repo selector modal */}
+            {syncStatus === 'needs_repo' && auth && (
+              <RepoSelector
+                token={auth.token}
+                onSelect={selectRepoAndSync}
+                onCancel={cancelSync}
+              />
+            )}
+            {/* Conflict resolution dialog */}
+            {syncStatus === 'has_conflicts' && syncPlan && (
+              <ConflictDialog
+                conflicts={syncPlan.conflicts}
+                onResolve={resolveConflictsAndSync}
+                onCancel={cancelSync}
+              />
             )}
             {activeFile ? (
               <>
