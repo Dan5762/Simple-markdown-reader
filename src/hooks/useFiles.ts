@@ -36,6 +36,11 @@ export function useFiles() {
     return set;
   }, [files, emptyFolders]);
 
+  const refreshFiles = useCallback(async () => {
+    const loaded = await getAllFiles();
+    setFiles(loaded.sort((a, b) => b.lastModified.localeCompare(a.lastModified)));
+  }, []);
+
   const importFile = useCallback(async (file: File, folder?: string) => {
     const content = await file.text();
     const path = folder ? `${folder}/${file.name}` : file.name;
@@ -293,5 +298,6 @@ export function useFiles() {
     moveFile,
     selectFile,
     updateFileContent,
+    refreshFiles,
   };
 }
