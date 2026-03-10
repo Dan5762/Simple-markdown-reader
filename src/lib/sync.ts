@@ -4,7 +4,28 @@ import {
   saveAnnotations,
   deleteFileFromDb,
   deleteAnnotationsFromDb,
+  getSetting,
+  setSetting,
 } from '@/lib/storage';
+
+// --- Tombstone tracking for locally deleted files ---
+const TOMBSTONE_KEY = 'sync-tombstones';
+
+export async function getTombstones(): Promise<string[]> {
+  return (await getSetting<string[]>(TOMBSTONE_KEY)) ?? [];
+}
+
+export async function addTombstone(path: string): Promise<void> {
+  const existing = await getTombstones();
+  if (!existing.includes(path)) {
+    await setSetting(TOMBSTONE_KEY, [...existing, path]);
+  }
+}
+
+async function removeTombstones(paths: string[]): Promise<void> {
+  const existing = await getTombstones();
+  await setSetting(TOMBSTONE_KEY, existing.filter((p) => !paths.includes(p)));
+}
 import {
   getRepoTree,
   getFileContent,
@@ -59,9 +80,10 @@ export async function buildSyncPlan(
   const remoteEntries = await getRepoTree(token, repo.owner, repo.name);
   const remoteMap = new Map(remoteEntries.map((e) => [e.path, e.sha]));
 
-  // 2. Build local maps
+  // 2. Build local maps + load tombstones
   const localFileMap = new Map(localFiles.map((f) => [f.path, f]));
   const localAnnMap = new Map(localAnnotations.map((a) => [a.path, a]));
+  const tombstones = new Set(await getTombstones());
 
   // 3. Collect all paths
   const allPaths = new Set<string>();
@@ -102,14 +124,24 @@ export async function buildSyncPlan(
         });
       }
     } else if (!local && remoteSha) {
-      // Remote only — pull it
-      actions.push({
-        path,
-        type: 'pull_new',
-        remoteSha,
-        isAnnotation,
-      });
-      pathsNeedingRemoteContent.push(path);
+      if (tombstones.has(path)) {
+        // Locally deleted — delete from remote too
+        actions.push({
+          path,
+          type: 'delete_remote',
+          remoteSha,
+          isAnnotation,
+        });
+      } else {
+        // Remote only — pull it
+        actions.push({
+          path,
+          type: 'pull_new',
+          remoteSha,
+          isAnnotation,
+        });
+        pathsNeedingRemoteContent.push(path);
+      }
     } else if (local && remoteSha) {
       // Both exist
       if (local.remoteSha === remoteSha) {
@@ -185,6 +217,7 @@ export async function executeSyncPlan(
   resolutions: Map<string, 'local' | 'remote'>,
 ): Promise<SyncResult> {
   const result: SyncResult = { pushed: 0, pulled: 0, deleted: 0, errors: [] };
+  const clearedTombstones: string[] = [];
 
   for (const action of plan.actions) {
     if (action.type === 'up_to_date') continue;
@@ -215,6 +248,7 @@ export async function executeSyncPlan(
         if (action.remoteSha) {
           await deleteRemoteFile(token, repo.owner, repo.name, action.path, action.remoteSha);
         }
+        clearedTombstones.push(action.path);
         result.deleted++;
       } else if (action.type === 'conflict') {
         const resolution = resolutions.get(action.path);
@@ -234,6 +268,11 @@ export async function executeSyncPlan(
     } catch (err) {
       result.errors.push(`${action.path}: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+
+  // Clear tombstones for successfully deleted remote files
+  if (clearedTombstones.length > 0) {
+    await removeTombstones(clearedTombstones);
   }
 
   return result;
