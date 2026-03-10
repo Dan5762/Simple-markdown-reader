@@ -6,6 +6,7 @@ import {
   deleteFileFromDb,
   deleteAnnotationsFromDb,
 } from '@/lib/storage';
+import { addTombstone } from '@/lib/sync';
 import { getParentFolder } from '@/lib/fileTree';
 
 export function useFiles() {
@@ -100,6 +101,13 @@ export function useFiles() {
 
   const deleteFile = useCallback(
     async (path: string) => {
+      // Record tombstone if file was synced so sync can delete it remotely
+      const existing = files.find((f) => f.path === path);
+      if (existing?.remoteSha) {
+        await addTombstone(path);
+        const annPath = path.replace(/\.md$/, '.annotations.json');
+        await addTombstone(annPath);
+      }
       await deleteFileFromDb(path);
       const annPath = path.replace(/\.md$/, '.annotations.json');
       await deleteAnnotationsFromDb(annPath);
@@ -108,7 +116,7 @@ export function useFiles() {
         setActiveFilePath(null);
       }
     },
-    [activeFilePath],
+    [files, activeFilePath],
   );
 
   const deleteFolder = useCallback(
@@ -118,6 +126,12 @@ export function useFiles() {
         (f) => f.path.startsWith(folderPath + '/'),
       );
       for (const file of toDelete) {
+        // Record tombstones for synced files so sync can delete them remotely
+        if (file.remoteSha) {
+          await addTombstone(file.path);
+          const annPath = file.path.replace(/\.md$/, '.annotations.json');
+          await addTombstone(annPath);
+        }
         await deleteFileFromDb(file.path);
         const annPath = file.path.replace(/\.md$/, '.annotations.json');
         await deleteAnnotationsFromDb(annPath);
