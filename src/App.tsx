@@ -170,7 +170,7 @@ function AppContent() {
                     {/* Toggle button — always visible, sits at the left edge */}
                     <button
                       onClick={() => setAnnotationPanelOpen((o) => !o)}
-                      className="flex h-8 w-6 items-center justify-center self-start mt-2 rounded-l-md border border-r-0 border-zinc-700/50 bg-zinc-950 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                      className="flex h-16 w-6 items-center justify-center self-center rounded-l-md border border-r-0 border-zinc-700/50 bg-zinc-950 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                       aria-label="Toggle annotations panel"
                     >
                       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
