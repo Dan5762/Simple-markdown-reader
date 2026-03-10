@@ -114,25 +114,23 @@ function AppContent() {
               </div>
             )}
             {/* Sync button — top right */}
-            {(hasUnsyncedChanges || isAuthenticated) && (
-              <div className="pointer-events-none absolute right-4 top-3 z-40">
-                <div className="pointer-events-auto">
-                  <SyncButton
-                    hasUnsyncedChanges={hasUnsyncedChanges}
-                    isAuthenticated={isAuthenticated}
-                    username={auth?.username ?? null}
-                    isLoggingIn={isLoggingIn}
-                    syncStatus={syncStatus}
-                    repoName={selectedRepo?.name ?? null}
-                    syncProgress={syncProgress}
-                    onSync={sync}
-                    onLogin={login}
-                    onLogout={logout}
-                    onDisconnectRepo={disconnectRepo}
-                  />
-                </div>
+            <div className="pointer-events-none absolute right-4 top-3 z-40">
+              <div className="pointer-events-auto">
+                <SyncButton
+                  hasUnsyncedChanges={hasUnsyncedChanges}
+                  isAuthenticated={isAuthenticated}
+                  username={auth?.username ?? null}
+                  isLoggingIn={isLoggingIn}
+                  syncStatus={syncStatus}
+                  repoName={selectedRepo?.name ?? null}
+                  syncProgress={syncProgress}
+                  onSync={sync}
+                  onLogin={login}
+                  onLogout={logout}
+                  onDisconnectRepo={disconnectRepo}
+                />
               </div>
-            )}
+            </div>
             {/* Device Flow modal */}
             {verification && (
               <DeviceFlowModal verification={verification} onCancel={cancelLogin} />
