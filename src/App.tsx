@@ -72,6 +72,7 @@ function AppContent() {
   }, []);
 
   const handleHighlightClick = useCallback((annotationId: string) => {
+    setAnnotationPanelOpen(true);
     setFocusedAnnotationId(annotationId);
     setTimeout(() => setFocusedAnnotationId(null), 2000);
   }, []);
