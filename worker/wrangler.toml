@@ -1,7 +1,0 @@
-name = "mdnotes-auth-proxy"
-main = "src/index.ts"
-compatibility_date = "2024-01-01"
-account_id = "db66f65c29c7d0be28420f2babe5c336"
-
-[assets]
-directory = "./public"
