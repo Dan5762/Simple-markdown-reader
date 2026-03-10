@@ -27,8 +27,6 @@ export default function SyncButton({
   onLogout,
   onDisconnectRepo,
 }: Props) {
-  if (!hasUnsyncedChanges && !isAuthenticated) return null;
-
   const isSyncing = syncStatus === 'syncing';
   const isSuccess = syncStatus === 'success';
   const isError = syncStatus === 'error';
