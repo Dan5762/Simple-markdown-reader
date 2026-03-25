@@ -162,9 +162,17 @@ export function useFiles() {
       if (newPath === oldPath) return;
       const existing = files.find((f) => f.path === oldPath);
       if (!existing) return;
+      // Tombstone old paths so sync deletes them remotely
+      if (existing.remoteSha) {
+        await addTombstone(oldPath);
+        const oldAnnPath = oldPath.replace(/\.md$/, '.annotations.json');
+        await addTombstone(oldAnnPath);
+      }
       const renamed: StoredFile = {
         ...existing,
         path: newPath,
+        remoteSha: null,
+        locallyModified: true,
         lastModified: new Date().toISOString(),
       };
       await saveFile(renamed);
@@ -175,7 +183,7 @@ export function useFiles() {
       const { getAnnotations, saveAnnotations } = await import('@/lib/storage');
       const anns = await getAnnotations(oldAnnPath);
       if (anns) {
-        await saveAnnotations({ ...anns, path: newAnnPath });
+        await saveAnnotations({ ...anns, path: newAnnPath, remoteSha: null, locallyModified: true });
         await deleteAnnotationsFromDb(oldAnnPath);
       }
       setFiles((prev) =>
@@ -198,8 +206,14 @@ export function useFiles() {
       const updates: { oldPath: string; newFile: StoredFile }[] = [];
 
       for (const file of affected) {
+        // Tombstone old paths so sync deletes them remotely
+        if (file.remoteSha) {
+          await addTombstone(file.path);
+          const oldAnnPath = file.path.replace(/\.md$/, '.annotations.json');
+          await addTombstone(oldAnnPath);
+        }
         const newFilePath = newFolderPath + file.path.slice(oldFolderPath.length);
-        const updated: StoredFile = { ...file, path: newFilePath, lastModified: new Date().toISOString() };
+        const updated: StoredFile = { ...file, path: newFilePath, remoteSha: null, locallyModified: true, lastModified: new Date().toISOString() };
         await saveFile(updated);
         await deleteFileFromDb(file.path);
         // Move annotations
@@ -208,7 +222,7 @@ export function useFiles() {
         const { getAnnotations, saveAnnotations } = await import('@/lib/storage');
         const anns = await getAnnotations(oldAnnPath);
         if (anns) {
-          await saveAnnotations({ ...anns, path: newAnnPath });
+          await saveAnnotations({ ...anns, path: newAnnPath, remoteSha: null, locallyModified: true });
           await deleteAnnotationsFromDb(oldAnnPath);
         }
         updates.push({ oldPath: file.path, newFile: updated });
@@ -248,7 +262,13 @@ export function useFiles() {
       if (newPath === oldPath) return;
       const existing = files.find((f) => f.path === oldPath);
       if (!existing) return;
-      const moved: StoredFile = { ...existing, path: newPath, lastModified: new Date().toISOString() };
+      // Tombstone old paths so sync deletes them remotely
+      if (existing.remoteSha) {
+        await addTombstone(oldPath);
+        const oldAnnPath = oldPath.replace(/\.md$/, '.annotations.json');
+        await addTombstone(oldAnnPath);
+      }
+      const moved: StoredFile = { ...existing, path: newPath, remoteSha: null, locallyModified: true, lastModified: new Date().toISOString() };
       await saveFile(moved);
       await deleteFileFromDb(oldPath);
       // Move annotations
@@ -257,7 +277,7 @@ export function useFiles() {
       const { getAnnotations, saveAnnotations } = await import('@/lib/storage');
       const anns = await getAnnotations(oldAnnPath);
       if (anns) {
-        await saveAnnotations({ ...anns, path: newAnnPath });
+        await saveAnnotations({ ...anns, path: newAnnPath, remoteSha: null, locallyModified: true });
         await deleteAnnotationsFromDb(oldAnnPath);
       }
       setFiles((prev) => prev.map((f) => (f.path === oldPath ? moved : f)));
