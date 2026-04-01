@@ -1,7 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
 import { useAnnotationContext } from '@/contexts/AnnotationContext';
 import { extractSelectionContext, createAnnotation } from '@/lib/annotations';
 import { applyHighlights, stripHighlights } from '@/lib/highlighter';
@@ -120,8 +122,8 @@ export default function RenderedView({ content, onHighlightClick }: RenderedView
       >
         <ReactMarkdown
           key={content}
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeHighlight]}
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeHighlight, rehypeKatex]}
         >
           {content}
         </ReactMarkdown>
